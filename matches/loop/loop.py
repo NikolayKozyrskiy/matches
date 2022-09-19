@@ -1,35 +1,25 @@
 import logging
+import os
 import typing
 from contextlib import contextmanager
-from functools import lru_cache
 from os import PathLike
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    TYPE_CHECKING,
-    TypeVar,
-    Union,
-)
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
+                    Optional, Protocol, Sequence, TypeVar, Union)
 from warnings import warn
 
 import ignite.distributed as idist
 import torch
 from ignite.metrics import Metric
 from ignite.utils import convert_tensor
+from matches.accelerators import Accelerator
+from matches.loop.iteration import IterationCounter
+from matches.loop.loader_scheduling import DataloaderOverrider
+from matches.loop.metric_manager import MetricManager
+from matches.shortcuts.module import module_eval, module_train
 from torch import nn
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
-
-from matches.accelerators import Accelerator
-from matches.loop.iteration import IterationCounter
-from matches.loop.loader_scheduling import DataloaderSchedulerWrapper
-from matches.loop.metric_manager import MetricManager
 
 if TYPE_CHECKING:
     from matches.callbacks.callback import Callback
@@ -48,13 +38,7 @@ class StateSource(Protocol):
         pass
 
 
-@lru_cache
-def _wrap_for_dev(dataloader):
-    # Every extra worker slows down start
-    # So we want minimal test of dataloader mutliprocessing,
-    # But we want it fast
-    dataloader.num_workers = 1
-    return DataloaderSchedulerWrapper(dataloader, single_pass_length=3)
+NON_BLOCKING_COPY = bool(os.environ.get("NBC", "True"))
 
 
 class StateManager:
@@ -67,9 +51,11 @@ class StateManager:
     def state_dict(self):
         return {key: value.state_dict() for key, value in self._state_sources.items()}
 
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict, skip_keys: Optional[Sequence[str]] = None):
+        skip_keys = skip_keys if skip_keys else []
         for k, ss in self._state_sources.items():
-            ss.load_state_dict(state_dict[k])
+            if k not in skip_keys:
+                ss.load_state_dict(state_dict[k])
 
     def write_state(self, file: Union[str, PathLike]):
         with Path(file).open("wb") as f:
@@ -81,9 +67,11 @@ class StateManager:
                 )
             torch.save(state_dict, f)
 
-    def read_state(self, file: Union[str, PathLike]):
+    def read_state(
+        self, file: Union[str, PathLike], skip_keys: Optional[Sequence[str]] = None
+    ):
         with Path(file).open("rb") as f:
-            self.load_state_dict(torch.load(f))
+            self.load_state_dict(torch.load(f, map_location="cpu"), skip_keys)
 
 
 class Loop:
@@ -91,9 +79,8 @@ class Loop:
         self,
         logdir: PathLike,
         callbacks: List["Callback"],
-        dev: bool = False,
+        loader_override: str = "disabled",
     ):
-        self.dev = dev
         self.callbacks = callbacks
         self.state_manager = StateManager()
         self.metrics = MetricManager(self)
@@ -108,14 +95,11 @@ class Loop:
         self._mode: Optional[str] = None
 
         self._modules: List[nn.Module] = []
+        self._loader_override = DataloaderOverrider(loader_override)
 
     def _emit_event(self, event: str, **event_kwargs):
         for c in self.callbacks:
             getattr(c, event)(self, **event_kwargs)
-
-    def _set_training(self, training):
-        for m in self._modules:
-            m.train(training)
 
     def attach(
         self,
@@ -164,7 +148,7 @@ class Loop:
         Yields:
               current epoch number
         """
-        if self.dev:
+        if self._loader_override.mode == "short":
             epochs = 2
 
         while self.iterations.current_epoch < epochs:
@@ -208,8 +192,11 @@ class Loop:
         """
         self._mode = mode
 
-        if self.dev:
-            dataloader = _wrap_for_dev(dataloader)
+        assert (
+            mode != "train" or self._in_epoch
+        ), "Dataloader can be run in train mode only inside epoch loop"
+
+        # dataloader = self._loader_override(dataloader, mode)
 
         with self._wrap_in_events(
             "on_dataloader_start", "on_dataloader_end", dataloader=dataloader
@@ -220,7 +207,9 @@ class Loop:
                     "on_iteration_start", "on_iteration_end", batch_no=batch_no
                 ):
                     if move_to_default_device:
-                        batch = convert_tensor(batch, idist.device())
+                        batch = convert_tensor(
+                            batch, idist.device(), non_blocking=NON_BLOCKING_COPY
+                        )
                     yield batch
                     if self._mode == "train":
                         self.iterations.current_batch.inc()
@@ -264,27 +253,27 @@ class Loop:
         Args:
             mode: train/valid
         """
-        assert (
-            mode != "train" or self._in_epoch
-        ), "Dataloader can be run in train mode only inside epoch loop"
         old_mode = self._mode
+        is_eval = mode == "valid"
         try:
             self._mode = mode
-
-            with torch.set_grad_enabled(mode == "train"):
-                self._set_training(mode == "train")
+            if is_eval:
+                with torch.set_grad_enabled(False), module_train(
+                    *self._modules, train=False
+                ):
+                    yield
+            else:
                 yield
         except GeneratorExit:
             pass
 
         self._mode = old_mode
-        self._set_training(old_mode == "train")
 
     def optimizer_step(
         self,
         optimizer: Optimizer,
         closure: Optional[Callable[[], float]] = None,
-        zero_grad: bool = True,
+        zero_grad: Union[bool, str] = True,
     ):
         """Optional shortcut wrapper for optimizer step.
 
@@ -305,7 +294,7 @@ class Loop:
         self._emit_event("on_before_optimizer_step", optimizer=optimizer)
         optimizer.step(closure)
         if zero_grad:
-            optimizer.zero_grad()
+            optimizer.zero_grad(zero_grad == "set_to_none")
         self._emit_event("on_after_optimizer_step", optimizer=optimizer)
         self.iterations.global_steps.inc()
 
