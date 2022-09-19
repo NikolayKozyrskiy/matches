@@ -61,10 +61,13 @@ class EnsureWorkdirCleanOrDevMode(Callback):
         if Repo is None:
             raise Exception("GitPython not found. Run pip install GitPython")
         if _is_dev_dir():
-            if not loop.dev:
+            if loop._loader_override.mode == "disabled":
                 raise Exception("Long experiments must be run from full_dir")
             ref = "dev-mode"
         else:
-            ref = _ensure_clean_worktree()
+            if loop._loader_override.mode == "disabled":
+                ref = _ensure_clean_worktree()
+            else:
+                ref = "dev-mode"
 
         _write_git_ref(loop.logdir, ref)
