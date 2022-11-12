@@ -37,12 +37,12 @@ Take control back!
 
 ## Installation
 ```shell
-pip install git+https://github.com/hexfaker/matches
+pip install git+https://github.com/NikolayKozyrskiy/matches
 ```
 
 ## Examples
 Examples are located in `examples/` dir. 
-* [DCGAN example](https://github.com/hexfaker/matches/tree/master/examples/dcgan)
+* [DCGAN example](https://github.com/NikolayKozyrskiy/matches/tree/master/examples/dcgan)
   has complex batch handling, image saving to tensorboard and configs
-* [CIFAR example](https://github.com/hexfaker/matches/blob/master/examples/ddp_cifar/ddp_cifar.py) is 
+* [CIFAR example](https://github.com/NikolayKozyrskiy/matches/blob/master/examples/ddp_cifar/ddp_cifar.py) is 
 well-commented and has OneCycle scheduler.
