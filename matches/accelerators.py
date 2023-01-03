@@ -23,7 +23,9 @@ class DDPAccelerator(Accelerator):
     def __init__(self, devices: Union[str, List[int]] = None):
         if "CUDA_VISIBLE_DEVICES" in os.environ:
             if devices is not None:
-                logging.info("CUDA_VISIBLE_DEVICES is set. Other settings will be ignored")
+                logging.info(
+                    "CUDA_VISIBLE_DEVICES is set. Other settings will be ignored"
+                )
             devices = os.environ["CUDA_VISIBLE_DEVICES"]
         if devices is None:
             devices = list(range(get_device_count_smi()))
@@ -53,3 +55,15 @@ class DDPAccelerator(Accelerator):
                 p.run(self._worker_fn, func, *args, **kwargs)
         else:
             func(*args, **kwargs)
+
+
+class VanillaAccelerator(Accelerator):
+    def __init__(self, hardware_device: str = "cpu"):
+        if hardware_device == "gpu" and torch.cuda.is_available():
+            assert "CUDA_VISIBLE_DEVICES" in os.environ, "You must set gpu id manually"
+            self.device = "cuda:0"
+        else:
+            self.device = "cpu"
+
+    def execute(self, func: Callable, *args, **kwargs):
+        func(*args, **kwargs)
