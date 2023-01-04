@@ -2,8 +2,9 @@
 name = "matches"
 version = "0.1.0"
 description = "Pytorch training toolkit for power users"
-authors = ["Vsevolod Poletaev <poletaev.va@gmail.com>"]
+authors = ["Vsevolod Poletaev <poletaev.va@gmail.com>", "Nikolay Kozyrskiy <nik.kozyrskiy@gmail.com>"]
 license = "GPL-3.0-only"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.7.0"
@@ -12,6 +13,7 @@ pytorch-ignite = "^0.4.2"
 tqdm = "^4.56.0"
 coloredlogs = "^15.0"
 tensorboardX = "^2.1"
+wandb = "^0.13.5"
 GitPython = {version = "^3.1.12", optional = true}
 
 [tool.poetry.dev-dependencies]
