@@ -4,8 +4,20 @@ import typing
 from contextlib import contextmanager
 from os import PathLike
 from pathlib import Path
-from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Optional, Protocol, Sequence, TypeVar, Union)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Set,
+    Optional,
+    Protocol,
+    Sequence,
+    TypeVar,
+    Union,
+)
 from warnings import warn
 
 import ignite.distributed as idist
@@ -78,7 +90,7 @@ class Loop:
     def __init__(
         self,
         logdir: PathLike,
-        callbacks: List["Callback"],
+        callbacks: Set["Callback"],
         loader_override: str = "disabled",
     ):
         self.callbacks = callbacks

@@ -15,6 +15,7 @@ class BestModelSaver(Callback):
         self.metric_name = metric_name
         self.logdir_suffix = logdir_suffix
         self.metric_mode = metric_mode
+        self.best_epoch = None
 
         if self.metric_mode == "min":
             self.best_value = float("+inf")
@@ -31,6 +32,7 @@ class BestModelSaver(Callback):
 
         if better_value != self.best_value:
             self.best_value = better_value
+            self.best_epoch = loop.iterations.current_epoch
             LOG.info(
                 "Metric %s reached new best value %g, updating checkpoint",
                 self.metric_name,
