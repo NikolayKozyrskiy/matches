@@ -11,7 +11,6 @@ from typing import (
     Dict,
     Iterable,
     List,
-    Set,
     Optional,
     Protocol,
     Sequence,
@@ -90,7 +89,7 @@ class Loop:
     def __init__(
         self,
         logdir: PathLike,
-        callbacks: Set["Callback"],
+        callbacks: List["Callback"],
         loader_override: str = "disabled",
     ):
         self.callbacks = callbacks
