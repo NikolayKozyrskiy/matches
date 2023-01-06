@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union, Type
+from typing import Dict, Optional, Union, Type, Iterable
 from tensorboardX import SummaryWriter
 
 from ..callbacks import Callback, TensorboardMetricWriterCallback, BestModelSaver
@@ -20,8 +20,8 @@ def get_best_metric(loop: Loop) -> Optional[Dict[str, Union[int, float]]]:
     return None
 
 
-def has_callback(loop: Loop, callback_cls: Type[Callback]) -> bool:
-    for c in loop.callbacks:
+def has_callback(callbacks: Iterable[Callback], callback_cls: Type[Callback]) -> bool:
+    for c in callbacks:
         if isinstance(c, callback_cls):
             return True
     return False
