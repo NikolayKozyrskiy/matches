@@ -1,9 +1,10 @@
-import os
 from datetime import datetime
+import json
+import os
 from os import PathLike
+from typing import Any, Dict, Union
 from pathlib import Path
 import random
-from typing import Union
 
 import numpy as np
 import torch
@@ -49,3 +50,15 @@ def setup_cudnn_reproducibility(
         if benchmark is None:
             benchmark = os.environ.get("CUDNN_BENCHMARK", "True") == "True"
         torch.backends.cudnn.benchmark = benchmark
+
+
+def makedir(dir_path: Union[str, Path]) -> None:
+    os.makedirs(dir_path, exist_ok=True)
+
+
+def dump_json(
+    data: Dict[str, Any], dst_path: Union[str, Path], indent: int = 2
+) -> None:
+    dst_path = dst_path if str(dst_path).endswith(".json") else f"{dst_path}.json"
+    with open(dst_path, "w") as f:
+        json.dump(data, f, indent=indent)

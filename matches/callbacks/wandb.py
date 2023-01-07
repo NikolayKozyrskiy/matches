@@ -36,7 +36,7 @@ class WandBLoggingSink(Callback):
     def on_train_end(self, loop: "Loop"):
         self._consume_new_entries(loop)
         self.run.finish()
-        print("Finish!")
+        print("WandBLoggingSink callback has just finished!")
 
     def on_iteration_end(self, loop: "Loop", batch_no: int):
         self._consume_new_entries(loop)
