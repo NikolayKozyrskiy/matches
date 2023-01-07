@@ -1,6 +1,7 @@
-from typing import Dict, List, Optional, Type, Iterable, Union
+from typing import Callable, Dict, List, Optional, Type, Iterable, Union
 from tensorboardX import SummaryWriter
 
+from .metrics import MetricBestSetup
 from ..callbacks import (
     Callback,
     TensorboardMetricWriterCallback,
@@ -27,15 +28,19 @@ def get_metrics_summary(
     return None
 
 
-def get_best_model_metric(loop: Loop) -> Optional[Dict[str, Union[str, int, float]]]:
+def get_metric_best_setups(
+    loop: Loop,
+) -> Optional[Dict[str, MetricBestSetup]]:
+    for c in loop.callbacks:
+        if isinstance(c, BestMetricsReporter):
+            return c.metric_best_setups_dict
+    return None
+
+
+def get_best_model_metric_setup(loop: Loop) -> Optional[MetricBestSetup]:
     for c in loop.callbacks:
         if isinstance(c, BestModelSaver):
-            return {
-                "metric_name": c.metric_name,
-                "best_value": c.best_value,
-                "best_epoch": c.best_epoch,
-                "total_epochs": c.epochs_elapsed_num,
-            }
+            return c.metric_best_setup
     return None
 
 
@@ -44,3 +49,12 @@ def has_callback(callbacks: Iterable[Callback], callback_cls: Type[Callback]) ->
         if isinstance(c, callback_cls):
             return True
     return False
+
+
+def get_callback(
+    callbacks: Iterable[Callback], callback_cls: Type[Callback]
+) -> Optional[Callback]:
+    for c in callbacks:
+        if isinstance(c, callback_cls):
+            return c
+    return None

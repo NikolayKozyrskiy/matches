@@ -4,6 +4,7 @@ from ignite.distributed import one_rank_only
 
 from .callback import Callback
 from ..loop import Loop
+from ..shortcuts.metrics import MetricBestSetup
 
 LOG = logging.getLogger(__name__)
 
@@ -15,33 +16,19 @@ class BestModelSaver(Callback):
         self.metric_name = metric_name
         self.logdir_suffix = logdir_suffix
         self.metric_mode = metric_mode
-        self.best_epoch = None
-        self.epochs_elapsed_num = 0
-
-        if self.metric_mode == "min":
-            self.best_value = float("+inf")
-            self._sel = min
-        else:
-            self.best_value = float("-inf")
-            self._sel = max
+        self.metric_best_setup = MetricBestSetup(metric_name, metric_mode)
 
     @one_rank_only()
     def on_epoch_end(self, loop: "Loop", epoch_no: int, total_epochs: int):
-        current_value = loop.metrics.latest[self.metric_name].value
-
-        better_value = self._sel(current_value, self.best_value)
-
-        if better_value != self.best_value:
-            self.best_value = better_value
-            self.best_epoch = epoch_no
+        if self.metric_best_setup.update(
+            loop.metrics.latest[self.metric_name].value, epoch_no
+        ):
             LOG.info(
                 "Metric %s reached new best value %g, updating checkpoint",
-                self.metric_name,
-                self.best_value,
+                self.metric_best_setup.name,
+                self.metric_best_setup.best_value,
             )
             self.save_model(loop)
-
-        self.epochs_elapsed_num += 1
 
     def save_model(self, loop: Loop):
         checkpoint_path = loop.logdir / self.logdir_suffix / "best.pth"
