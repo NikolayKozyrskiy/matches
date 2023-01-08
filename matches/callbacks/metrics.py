@@ -47,7 +47,7 @@ class BestMetricsReporter(Callback):
         summary_df = pd.DataFrame(summary)
         summary_df.to_csv(loop.logdir / "best_metrics_summary.csv")
         (loop.logdir / "best_metrics_summary.txt").write_text(str(summary_df))
-        dump_json(summary, loop.logdir / "best_metrics_summary.json", indent=2)
+        # dump_json(summary, loop.logdir / "best_metrics_summary.json", indent=2)
 
     def get_summary(self) -> Dict[str, List[Union[str, float, int]]]:
         if get_rank() != 0:

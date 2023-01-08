@@ -35,19 +35,19 @@ class TensorboardMetricWriterCallback(Callback):
             self.sw.close()
             self.sw = None
 
-    def get_sw(self, loop) -> SummaryWriter:
+    def get_sw(self, loop: "Loop") -> SummaryWriter:
         if get_rank() != 0:
             warn("SummaryWriter was requested used in process with non-zero rank")
         self._init_sw(loop)
         return self.sw
 
-    def _init_sw(self, loop: Loop):
+    def _init_sw(self, loop: Loop) -> None:
         if self.sw is None:
             path = loop.logdir / self.logdir_suffix
             path.mkdir(exist_ok=True, parents=True)
             self.sw = SummaryWriter(str(path))
 
-    def _consume_new_entries(self, loop):
+    def _consume_new_entries(self, loop: "Loop") -> None:
         self._init_sw(loop)
         entries = loop.metrics.collect_new_entries()
         for e in entries:

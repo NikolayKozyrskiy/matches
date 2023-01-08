@@ -41,7 +41,13 @@ class StreamThroughTqdm(AttrProxy):
 
 def configure_logging(file=sys.stdout):
     tqdm_stream = StreamThroughTqdm(file)
+    remove_handlers()
     coloredlogs.install(isatty=True, stream=tqdm_stream)
     logging.captureWarnings(True)
     sys.stdout = tqdm_stream
     sys.stderr = tqdm_stream
+
+
+def remove_handlers() -> None:
+    for handler in logging.root.handlers:
+        logging.root.removeHandler(handler)
