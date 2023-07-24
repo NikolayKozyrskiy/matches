@@ -1,14 +1,15 @@
-from typing import Callable, Dict, List, Optional, Type, Iterable, Union
+from typing import Callable, Dict, Iterable, List, Optional, Type, Union
+
 from tensorboardX import SummaryWriter
 
-from .metrics import MetricBestSetup
 from ..callbacks import (
-    Callback,
-    TensorboardMetricWriterCallback,
     BestMetricsReporter,
     BestModelSaver,
+    Callback,
+    TensorboardMetricWriterCallback,
 )
 from ..loop import Loop
+from .metrics import MetricBestSetup
 
 
 def get_summary_writer(loop: Loop) -> SummaryWriter:

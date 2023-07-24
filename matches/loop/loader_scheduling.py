@@ -1,7 +1,7 @@
+from copy import deepcopy
 from itertools import islice
 from typing import Generic, Iterable, TypeVar, Union
 
-from copy import deepcopy
 from torch.utils.data import DataLoader
 
 T_co = TypeVar("T_co", covariant=True)
@@ -86,7 +86,7 @@ class DataloaderSchedulerWrapper(Generic[T_co]):
             object.__setattr__(self, key, value)
 
 
-class CacheSingleBatchDL():
+class CacheSingleBatchDL:
     def __init__(self, loader):
         self.loader = loader
         self.batch = next(iter(loader))
@@ -136,7 +136,7 @@ class DataloaderOverrider:
             if mode == "train":
                 loader.num_workers = 1
                 loader = DataloaderSchedulerWrapper(
-                    loader, single_pass_length=10., truncated_length=1
+                    loader, single_pass_length=10.0, truncated_length=1
                 )
             if mode == "valid":
                 loader = DataloaderSchedulerWrapper(loader, truncated_length=1)

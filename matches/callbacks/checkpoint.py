@@ -2,9 +2,9 @@ import logging
 
 from ignite.distributed import one_rank_only
 
-from .callback import Callback
 from ..loop import Loop
 from ..shortcuts.metrics import MetricBestSetup
+from .callback import Callback
 
 LOG = logging.getLogger(__name__)
 
@@ -24,9 +24,10 @@ class BestModelSaver(Callback):
             loop.metrics.latest[self.metric_name].value, epoch_no
         ):
             LOG.info(
-                "Metric %s reached new best value %g, updating checkpoint",
+                "Metric %s reached new best value %g at epoch %d -> updating checkpoint",
                 self.metric_best_setup.name,
                 self.metric_best_setup.best_value,
+                epoch_no,
             )
             self.save_model(loop)
 

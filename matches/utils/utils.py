@@ -1,10 +1,10 @@
-from datetime import datetime
 import json
 import os
-from os import PathLike
-from typing import Any, Dict, Union
-from pathlib import Path
 import random
+from datetime import datetime
+from os import PathLike
+from pathlib import Path
+from typing import Any, Dict, Union
 
 import numpy as np
 import torch
@@ -53,7 +53,8 @@ def setup_cudnn_reproducibility(
 
 
 def makedir(dir_path: Union[str, Path]) -> None:
-    os.makedirs(dir_path, exist_ok=True)
+    dir_path = Path(dir_path).resolve()
+    dir_path.mkdir(exist_ok=True, parents=True)
 
 
 def dump_json(

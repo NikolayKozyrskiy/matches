@@ -1,7 +1,7 @@
 import logging
 import math
 from dataclasses import dataclass
-from typing import Dict, List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
 import numpy as np
 import torch

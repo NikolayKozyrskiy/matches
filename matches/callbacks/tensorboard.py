@@ -5,8 +5,8 @@ from ignite.distributed import get_rank, one_rank_only
 from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 
-from . import Callback
 from ..loop import Loop
+from . import Callback
 
 
 class TensorboardMetricWriterCallback(Callback):

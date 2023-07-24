@@ -58,5 +58,3 @@ def module_train(*modules: nn.Module, train=True):
 
 def module_eval(mod: nn.Module):
     return module_train(mod, train=False)
-
-

@@ -5,9 +5,9 @@ import tqdm.auto as tqdm
 from ignite.distributed import one_rank_only
 from torch.utils.data import DataLoader
 
-from .callback import Callback
-from ..utils.logging import configure_logging
 from ..loop import Loop
+from ..utils.logging import configure_logging
+from .callback import Callback
 
 
 class TqdmProgressCallback(Callback):
