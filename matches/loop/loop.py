@@ -102,7 +102,7 @@ class Loop:
 
         self.iterations = IterationCounter()
         if attach_iterations:
-            self.state_manager.attach(iterations=self.iterations)
+            self.attach(iterations=self.iterations)
 
         self._in_epoch = False
         self._in_dataloader = False
