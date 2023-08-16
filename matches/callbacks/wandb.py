@@ -50,7 +50,7 @@ class WandBLoggingSink(Callback):
     def on_train_end(self, loop: "Loop"):
         self._consume_new_entries(loop)
         self.run.finish()
-        print("WandBLoggingSink callback has just finished!")
+        print("WandBLoggingSink callback has finished!")
 
     @one_rank_only()
     def on_iteration_end(self, loop: "Loop", batch_no: int):
@@ -59,16 +59,6 @@ class WandBLoggingSink(Callback):
     @one_rank_only()
     def on_epoch_end(self, loop: "Loop", epoch_no: int, total_epochs: int):
         self._consume_new_entries(loop)
-
-    def _consume_new_entries(self, loop: "Loop", reset: bool = True):
-        entries: List[MetricEntry] = loop.metrics.collect_new_entries(reset=reset)
-        for e in entries:
-            entry = {
-                e.name: e.value,
-                **{t.value: v for t, v in e.iteration_values.items()},
-            }
-            self.run.log(entry, commit=False)
-        self.run.log({}, commit=True)
 
     @one_rank_only()
     def on_epoch_start(self, loop: "Loop", epoch_no: int, total_epochs: int):
@@ -79,3 +69,13 @@ class WandBLoggingSink(Callback):
                 log="all",
                 log_freq=10 if self.loader_mode != "full" else self.log_freq,
             )
+
+    def _consume_new_entries(self, loop: "Loop", reset: bool = True):
+        entries: List[MetricEntry] = loop.metrics.collect_new_entries(reset=reset)
+        for e in entries:
+            entry = {
+                e.name: e.value,
+                **{t.value: v for t, v in e.iteration_values.items()},
+            }
+            self.run.log(entry, commit=False)
+        self.run.log({}, commit=True)

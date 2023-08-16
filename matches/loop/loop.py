@@ -91,6 +91,7 @@ class Loop:
         logdir: PathLike,
         callbacks: List["Callback"],
         loader_override: str = "disabled",
+        attach_iterations: bool = True,
     ):
         self.callbacks = callbacks
         self.state_manager = StateManager()
@@ -100,6 +101,8 @@ class Loop:
         self.logdir: Path = Path(logdir)
 
         self.iterations = IterationCounter()
+        if attach_iterations:
+            self.state_manager.attach(iterations=self.iterations)
 
         self._in_epoch = False
         self._in_dataloader = False
@@ -171,7 +174,7 @@ class Loop:
                 epoch_no=self.iterations.current_epoch,
                 total_epochs=epochs,
             ):
-                yield self.iterations.current_epoch
+                yield int(self.iterations.current_epoch)
             self.iterations.current_epoch.inc()
             self._in_epoch = False
 

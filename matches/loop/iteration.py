@@ -1,6 +1,6 @@
 from collections import defaultdict
 from enum import Enum
-from typing import Union
+from typing import Dict, Union
 
 
 class IterationType(Enum):
@@ -47,6 +47,13 @@ class IterationCounter:
     def __getitem__(self, item):
         v = self._storage[item]
         return self._ManagedInt(v, item, self)
+
+    def state_dict(self):
+        return {k.value: v for k, v in self._storage.items()}
+
+    def load_state_dict(self, state_dict: Dict):
+        self._storage.clear()
+        self._storage.update({IterationType(k): v for k, v in state_dict.items()})
 
     @property
     def current_epoch(self) -> _ManagedInt:

@@ -2,12 +2,30 @@ import json
 import os
 import random
 from datetime import datetime
+from functools import wraps
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import numpy as np
 import torch
+from ignite.distributed import get_world_size
+
+
+def single_process_only() -> Callable:
+    """Decorator to run func in single process mode only"""
+
+    def _single_process_only(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Optional[Any]:
+            ret = None
+            if get_world_size() == 1:
+                ret = func(*args, **kwargs)
+            return ret
+
+        return wrapper
+
+    return _single_process_only
 
 
 def unique_logdir(root: Union[PathLike, str], comment: str = "") -> Path:
