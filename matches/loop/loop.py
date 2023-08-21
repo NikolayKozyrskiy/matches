@@ -59,8 +59,16 @@ class StateManager:
     def attach(self, key: str, source: StateSource):
         self._state_sources[key] = source
 
-    def state_dict(self):
-        return {key: value.state_dict() for key, value in self._state_sources.items()}
+    def state_dict(self, skip_keys: Optional[Sequence[str]] = None):
+        skip_keys = skip_keys if skip_keys else []
+        return {
+            key: value.state_dict()
+            for key, value in self._state_sources.items()
+            if key not in skip_keys
+        }
+
+    def state_dict_by_key(self, key: str):
+        return {key: self._state_sources[key].state_dict()}
 
     def load_state_dict(self, state_dict, skip_keys: Optional[Sequence[str]] = None):
         skip_keys = skip_keys if skip_keys else []
@@ -68,9 +76,24 @@ class StateManager:
             if k not in skip_keys:
                 ss.load_state_dict(state_dict[k])
 
-    def write_state(self, file: Union[str, PathLike]):
+    def load_state_dict_by_key(self, state_dict, key: str):
+        self._state_sources[key].load_state_dict(state_dict[key])
+
+    def write_state(
+        self, file: Union[str, PathLike], skip_keys: Optional[Sequence[str]] = None
+    ):
         with Path(file).open("wb") as f:
-            state_dict = self.state_dict()
+            state_dict = self.state_dict(skip_keys=skip_keys)
+            if len(state_dict) == 0:
+                warn(
+                    "state_dict is empty. Did you forget to attach "
+                    "model/optimizer/scheduler etc?"
+                )
+            torch.save(state_dict, f)
+
+    def write_state_by_key(self, file: Union[str, PathLike], key: str):
+        with Path(file).open("wb") as f:
+            state_dict = self.state_dict_by_key(key=key)
             if len(state_dict) == 0:
                 warn(
                     "state_dict is empty. Did you forget to attach "
@@ -83,6 +106,10 @@ class StateManager:
     ):
         with Path(file).open("rb") as f:
             self.load_state_dict(torch.load(f, map_location="cpu"), skip_keys)
+
+    def read_state_by_key(self, file: Union[str, PathLike], key: str):
+        with Path(file).open("rb") as f:
+            self.load_state_dict_by_key(torch.load(f, map_location="cpu"), key)
 
 
 class Loop:
