@@ -147,7 +147,7 @@ class Loop:
         id: str = None,
         obj: Any = None,
         objects_dict: typing.Mapping[str, Any] = None,
-        **kwargs
+        **kwargs,
     ):
         """Add object to list of managed objects.
 
@@ -338,6 +338,45 @@ class Loop:
             optimizer.zero_grad(zero_grad == "set_to_none")
         self._emit_event("on_after_optimizer_step", optimizer=optimizer)
         self.iterations.global_steps.inc()
+
+    def zero_grad_backward_step(
+        self,
+        loss: torch.Tensor,
+        optimizer: Optimizer,
+        set_to_none: bool = True,
+        closure: Optional[Callable[[], float]] = None,
+        **backward_kwargs,
+    ) -> None:
+        """Optional shortcut wrapper for optimizer step.
+
+        * Zeroes grad at the beginning of routine (quite common case, you know ;-))
+        * Emits some callback events (before/after backward and step)
+        * Counts how much global_steps are done (differs from iterations/batches
+          if you implement eg grad accumulation). This counter can be used as
+          MetricsIterationType
+
+        Args:
+            loss: loss to call backward on
+            set_to_none: flag passed to optimizer.zero_grad(set_to_none=set_to_none)
+            optimizer: Optimizer to perform step
+            closure: Some optimizers require closure
+             **backward_kwargs:
+
+        Returns:
+              None
+        """
+        optimizer.zero_grad(set_to_none=set_to_none)
+
+        loss.backward(**backward_kwargs)
+        self._emit_event("on_after_backward")
+
+        self._emit_event("on_before_optimizer_step", optimizer=optimizer)
+        optimizer.step(closure)
+        self._emit_event("on_after_optimizer_step", optimizer=optimizer)
+
+        self.iterations.global_steps.inc()
+
+        return None
 
     def run(self, training_procedure: typing.Callable, *args, **kwargs):
         self._emit_event("on_train_start")
