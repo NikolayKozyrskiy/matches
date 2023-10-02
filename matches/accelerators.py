@@ -21,12 +21,14 @@ def get_device_count_smi():
 
 class DDPAccelerator(Accelerator):
     def __init__(self, devices: Union[str, List[int]] = None):
+        self._set_cuda_devices_on_execute = True
         if "CUDA_VISIBLE_DEVICES" in os.environ:
             if devices is not None:
                 logging.info(
                     "CUDA_VISIBLE_DEVICES is set. Other settings will be ignored"
                 )
             devices = os.environ["CUDA_VISIBLE_DEVICES"]
+            self._set_cuda_devices_on_execute = False
         if devices is None:
             devices = list(range(get_device_count_smi()))
 
@@ -42,10 +44,13 @@ class DDPAccelerator(Accelerator):
         func(*args, **kwargs)
 
     def execute(self, func: Callable, *args, **kwargs):
-        assert (
-            not torch.cuda.is_initialized()
-        ), "Accelerator failed to configure device visibility, cuda is already initialized. Please fix"
-        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, self.devices))
+        if self._set_cuda_devices_on_execute:
+            if torch.cuda.is_initialized():
+                raise RuntimeError(
+                    "Accelerator failed to configure device visibility, cuda is already initialized. Please fix"
+                )
+            os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, self.devices))
+
         if len(self.devices) > 1:
             with Parallel(
                 backend="nccl",
