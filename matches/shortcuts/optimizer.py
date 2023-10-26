@@ -1,6 +1,6 @@
 import typing
 from enum import Enum
-from typing import Optional, Protocol
+from typing import Optional, Protocol, Union
 
 import torch
 from matches.loop import Loop
@@ -63,6 +63,31 @@ class LRSchedulerWrapper:
     def step_epoch(self, epoch=None):
         if self._scheduler is not None and self._scope_type == SchedulerScopeType.EPOCH:
             self._scheduler.step(epoch)
+
+
+def scheduler_step(
+    scheduler: Optional[LRSchedulerWrapper],
+    scope_type: SchedulerScopeType,
+    num: Union[int, float, None] = None,
+) -> None:
+    if scheduler is not None:
+        scheduler.step(scope_type=scope_type, epoch=num)
+
+
+def scheduler_step_batch(
+    scheduler: Optional[LRSchedulerWrapper],
+    num: Union[int, float, None] = None,
+) -> None:
+    if scheduler is not None:
+        scheduler.step_batch(num)
+
+
+def scheduler_step_epoch(
+    scheduler: Optional[LRSchedulerWrapper],
+    num: Union[int, float, None] = None,
+) -> None:
+    if scheduler is not None:
+        scheduler.step_epoch(num)
 
 
 def simple_gd_step(loop: Loop, optimizer: Optimizer, loss: torch.Tensor):
